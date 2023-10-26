@@ -15,7 +15,7 @@
     - [A Taste of Strings and Runes](#a-taste-of-strings-and-runes)
     - [Explicit Type Conversion](#explicit-type-conversion)
     - [Literals are Untyped](#literals-are-untyped)
-  - [var Versus :=](#var-versus-:=)
+  - [var Versus :=](#var-versus)
   - [Using const](#using-const)
   - [Typed and Untyped Constants](#typed-and-untyped-constants)
   - [Unused Variables](#unused-variables)
