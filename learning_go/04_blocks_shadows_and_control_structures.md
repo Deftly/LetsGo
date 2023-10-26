@@ -366,7 +366,7 @@ fmt.Println(total)
 ```
 After the `for` loop, print the value of `total`. What is printed out? What is the likely bug in this code?
 
-> [Solutions]()
+> [Solutions](./exercises/04/)
 
 ## Wrapping Up
 This section covered blocks, shadowing, and control structures and how to use them properly. The [next section](/learning_go/05_functions.md) will cover functions.
