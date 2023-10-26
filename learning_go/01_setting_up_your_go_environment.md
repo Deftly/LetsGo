@@ -143,7 +143,7 @@ Go programs compile to a standalone native binary, so you don't need to worry th
 To update Go on Linux/BSD you need to download the latest version and follow these steps:
 ```bash
 $ sudo mv /usr/local/go /usr/local/old-go
-$ sudo tar -C /usr/local -xzf -xzf go<version>.tar.gz
+$ sudo tar -C /usr/local -xzf go<version>.tar.gz
 $ sudo rm -rf /usr/local/old-go
 ```
 ## Wrapping Up
