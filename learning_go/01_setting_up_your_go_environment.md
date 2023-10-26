@@ -1,5 +1,20 @@
 # Setting Up Your Go Environment
 
+<!--toc:start-->
+- [Setting Up Your Go Environment](#setting-up-your-go-environment)
+  - [Installing the Go Tools](#installing-the-go-tools)
+    - [Go Tooling](#go-tooling)
+  - [Your First Go Program](#your-first-go-program)
+    - [Making a Go Module](#making-a-go-module)
+    - [go build](#go-build)
+    - [go fmt](#go-fmt)
+  - [go vet](#go-vet)
+  - [Makefiles](#makefiles)
+  - [The Go Compatibility Promise](#the-go-compatibility-promise)
+  - [Staying Up to Date](#staying-up-to-date)
+  - [Wrapping Up](#wrapping-up)
+<!--toc:end-->
+
 ## Installing the Go Tools
 To build Go code you need to download and install the Go development tools, the latest version can be found on the [Go website](https://go.dev/dl/). The installers for Mac and Windows automatically installs Go in the right location, remove old installs, and puts the Go binary in the default executable path.
 
