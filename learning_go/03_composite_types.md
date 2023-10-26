@@ -1,5 +1,36 @@
 # Composite Types
 
+<!--toc:start-->
+- [Composite Types](#composite-types)
+  - [Arrays-Too Rigid to Use Directly](#arrays-too-rigid-to-use-directly)
+  - [Slices](#slices)
+    - [len](#len)
+    - [append](#append)
+    - [Capacity](#capacity)
+      - [The Go Runtime](#the-go-runtime)
+    - [make](#make)
+    - [Emptying A Slice](#emptying-a-slice)
+    - [Declaring Your Slice](#declaring-your-slice)
+    - [Slicing Slices](#slicing-slices)
+      - [Slices share storage sometimes](#slices-share-storage-sometimes)
+    - [copy](#copy)
+    - [Converting Arrays to Slices](#converting-arrays-to-slices)
+    - [Converting Slices to Arrays](#converting-slices-to-arrays)
+  - [Strings and Runes and Bytes](#strings-and-runes-and-bytes)
+  - [Maps](#maps)
+    - [Reading and Writing a Map](#reading-and-writing-a-map)
+    - [The comma ok idiom](#the-comma-ok-idiom)
+    - [Deleting from Maps](#deleting-from-maps)
+    - [Emptying a Map](#emptying-a-map)
+    - [Comparing Maps](#comparing-maps)
+    - [Using Maps as Sets](#using-maps-as-sets)
+  - [Structs](#structs)
+    - [Anonymous Structs](#anonymous-structs)
+    - [Comparing and Converting Structs](#comparing-and-converting-structs)
+  - [Exercises](#exercises)
+  - [Wrapping Up](#wrapping-up)
+<!--toc:end-->
+
 ## Arrays-Too Rigid to Use Directly
 Go has arrays like most languages but they are rarely used directly. All the elements in the array must be of the specified type and there are a fed different declaration styles:
 ```go
