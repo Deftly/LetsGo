@@ -233,6 +233,7 @@ In many languages, constants are always written in all uppercase letters, with w
 2. Write out a program where you declare a constance called `value` that can be assigned to both an integer and a floating point variable. Assign it to an integer called `i` and a floating point variable called `f`. Print out `i` and `f`.
 3. Write a program with three variables, one named `b` of type `byte`, one named `smallI` of type `int32`, and one named `bigI` of type `uint64`. Assign each variable the maximum legal value for its type, then add `1` to each variable. Print out their values.
 
+> [Solutions](./exercises/02/)
 
 ## Wrapping Up
 This section covered how to use built-in types, declare variables and work with assignments and operators. The [next section](./03_composite_types.md) will go over composite types in Go: arrays, slices, maps, and structs. We'll also take another look at strings and runes and learn about encodings.
