@@ -118,11 +118,122 @@ The Go compiler inserts code that assigns whatever is returned to the return par
 There is one situation where named return values are essential, we will cover that when talking about `defer` later in this section.
 
 ### Blank Returns-Never Use These!
-
+If you have named return values you can just write `return` without specifying values that are returned. This returns the last values assigned to the named return values:
+```go
+func divAndRemainder(num, denom int) (result, remainder int, err error) {
+	if denom == 0 {
+		err = errors.New("cannot divide by zero")
+		return
+	}
+	result, remainder = num/denom, num%denom
+	return
+}
+```
+Most experienced Go developers consider blank returns a bad idea because they make it harder to understand data flow. Good software is clear and readable. When you use a blank return the reader of your code needs to scan back through the program to find the last value assigned to the return parameters to see what is actually being returned.
 
 ## Functions Are Values
+The type of a function is built out of the keyword `func` and the types of the parameters and return values. This combination is called the *signature* of the function. Any function that has the exact same number and types of parameters and return values meets the type signature.
+
+Since functions are values you can declare a function variable:
+```go
+var myFuncVariable func(string) int
+```
+`myFuncVariable` can be assigned any function that has a single parameter of type `string` and returns a single value of type `int`:
+```go
+func f1(a string) int {
+	return len(a)
+}
+
+func f2(a string) int {
+	total := 0
+	for _, v := range a {
+		total += int(v)
+	}
+	return total
+}
+
+func main() {
+	var myFuncVariable func(string) int
+	myFuncVariable = f1
+	result := myFuncVariable("Hello") // 5
+	fmt.Println(result)
+
+	myFuncVariable = f2
+	result = myFuncVariable("Hello") // 500
+	fmt.Println(result)
+}
+```
+The default zero value for a function variable is `nil`. Attempting to run a function variable with a `nil` value results in a panic.
+
+Having functions as values can let us do some clever things. In the next example we'll build a simple calculator using functions as values in a map:
+```go
+// Create set of functions with the same signature
+func add(i, j int) int { return i + j }
+
+func sub(i, j int) int { return i - j }
+
+func mul(i, j int) int { return i * j }
+
+func div(i, j int) int { return i / j }
+
+// Create a map to associate a math operator with each function
+var opMap = map[string]func(int, int) int{
+	"+": add,
+	"-": sub,
+	"*": mul,
+	"/": div,
+}
+
+func main() {
+	expressions := [][]string{
+		{"2", "+", "3"},
+		{"2", "-", "3"},
+		{"2", "*", "3"},
+		{"2", "/", "3"},
+		{"2", "%", "3"},
+		{"two", "+", "three"},
+		{"5"},
+	}
+	for _, expression := range expressions {
+		if len(expression) != 3 {
+			fmt.Println("invalid expression:", expression)
+			continue
+		}
+		p1, err := strconv.Atoi(expression[0])
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		op := expression[1]
+		opFunc, ok := opMap[op]
+		if !ok {
+			fmt.Println("unsupported operator:", op)
+			continue
+		}
+		p2, err := strconv.Atoi(expression[2])
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		result := opFunc(p1, p2)
+		fmt.Println(result)
+	}
+}
+```
+> **_NOTE:_** Don't write fragile programs. The core logic is very short, just 6 lines inside the `for` loop. The rest of the algorithm is error checking and data validation. Skipping these steps produces unstable, unmaintainable code. Error handling is what separates the professionals from the amateurs.
 
 ### Function Type Declarations
+Just like how you use the `type` keyword to define a `struct` you can use it to define a function type too:
+```go
+type opFuncType func(int, int) int
+```
+We can use this to rewrite the `opMap` declaration in our previous example: 
+```go
+var opMap = map[string]opFuncType{
+  // same as before
+}
+```
+One advantage of declaring a function type is that it acts as documentation. It can be helpful to give something a name if you are going to refer to it multiple times. We'll see another reason in a [later section](./07_types_methods_and_interfaces.md#function-types-are-a-bridge-to-interfaces)
 
 ### Anonymous Functions
 
