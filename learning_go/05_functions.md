@@ -236,10 +236,73 @@ var opMap = map[string]opFuncType{
 One advantage of declaring a function type is that it acts as documentation. It can be helpful to give something a name if you are going to refer to it multiple times. We'll see another reason in a [later section](./07_types_methods_and_interfaces.md#function-types-are-a-bridge-to-interfaces)
 
 ### Anonymous Functions
+Not only can you assign functions to variables, you can define new functions within a function and assign them to variables:
+```go
+func main() {
+	f := func(j int) {
+		fmt.Println("printing", j, "from inside an anonymous function")
+	}
+	for i := 0; i < 5; i++ {
+		f(i)
+	}
+}
+```
+You don't have to assign an anonymous function to a variable. You can write them inline and call them immediately:
+```go
+func main() {
+	for i := 0; i < 5; i++ {
+		func(j int) {
+			fmt.Println("printing", j, "from inside of anonymous function")
+		}(i)
+	}
+}
+```
+There are two situations where declaring anonymous functions without assigning them to variables is useful:`defer` statements and launching goroutines. We'll talk about `defer` [later in this section](#defer) and goroutines will be covered in [section 12](./12_concurrency_in_go.md).
+
+Unlike a normal function definition, you can assign a new value to a package level anonymous function:
+```go
+var (
+	add = func(i, j int) int { return i + j }
+	sub = func(i, j int) int { return i - j }
+	mul = func(i, j int) int { return i * j }
+	div = func(i, j int) int { return i / j }
+)
+
+func main() {
+	x := add(2, 3)
+	fmt.Println(x) // 5
+	changeAdd()
+	y := add(2, 3)
+	fmt.Println(y) // 8
+}
+
+func changeAdd() {
+	add = func(i, j int) int { return i + j + j }
+}
+```
+Before using a package-level anonymous function, be very sure you need this capability. You should always try to keep package-level state immutable to make data flow easier to understand. If a function's meaning changes while a program is running, it becomes difficult to understand not just how data flows, but how it is processed.
 
 ## Closures
+*Closures* is a computer science term that means that functions declared inside of functions are able to access and modify variables declared in the outer function. Here's an example:
+```go
+func main() {
+	a := 20
+	f := func() {
+		fmt.Println(a) // 20
+		a = 30
+	}
+	f()
+	fmt.Println(a) // 30
+}
+```
+What benefit do we get from creating mini-functions within larger functions?
+
+One thing that closures allow is to limit a function's scope. If a function is only going to be called from one other function we can use an inner function to "hide" the called function. This reduces the number of declarations at the package level. 
+
+Closures really become interesting when they are passed to other functions or returned from a function, allowing you to take variables within your function and use those values *outside* of your function.
 
 ### Passing Functions as Parameters
+
 
 ### Returning Functions from Functions
 
