@@ -387,7 +387,7 @@ This gives us the following output:
 2 3
 4 6
 ```
-> **_NOTE:** You may sometimes hear the term *higher-order functions*, especially when talking about functional programming languages. That's a fancy way of saying that a function has a function as an input parameter or a return value.
+> **_NOTE:_** You may sometimes hear the term *higher-order functions*, especially when talking about functional programming languages. That's a fancy way of saying that a function has a function as an input parameter or a return value.
 
 ## defer
 Programs often create temporary resources, like files or network connections, that need to be cleaned up. This cleanup has to happen no matter how many exit points a function has, or whether a function completed successfully or not. In Go, cleanup code is attached to the function with `defer`.
