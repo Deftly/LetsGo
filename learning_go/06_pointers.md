@@ -126,12 +126,40 @@ func main() {
 	fmt.Println(x) // 20
 }
 ```
-Let's see how this code flows visually:
+Here is how this code flows visually:
 ![updating_a_pointer](./assets/updating_a_pointer.png)
 
 ## Pointers Are a Last Resort
+You should be careful when using pointers, they can make it harder to understand data flow and can create extra work for the garbage collector. As an example, don't populate a struct by passing a pointer to it into a function, instead have the function instantiate and return the struct: 
+```go
+// Don't do this
+func MakeFoo(f *Foo) error {
+	f.Field1 = "val"
+	f.Field2 = 20
+	return nil
+}
+
+// Do this
+func MakeFooV2() (Foo, error) {
+	f := Foo{
+		Field1: "val",
+		Field2: 20,
+	}
+	return f, nil
+}
+```
+The only time you should use pointer parameters to modify a variable is when the function expects an interface. This is a common pattern when working with JSON:
+```go
+	f := struct {
+		Name string `json:"name"`
+		Age  int    `json:"age"`
+	}{}
+	err := json.Unmarshal([]byte(`{"name": "Bob", "age": 30}`), &f)
+```
+When returning values from a function, you should favor value types. Only use a pointer type as a return type if there is state within the data type that needs to be modified.
 
 ## The Zero Value Versus No Value
+
 
 ## The Difference Between Maps and Slices
 
