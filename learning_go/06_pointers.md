@@ -237,11 +237,23 @@ A stack is a consecutive block of memory. Every function call in a thread shares
 To store something on the stack you must know exactly how big it is at compile time. The value types in Go(primitive values, arrays, and structs) all have known sizes at compile time, meaning they can be stored on the stack instead of the heap. The size of a pointer type is also known and can be stored on the stack.
 
 The rules are more complicated when it comes to the data that the pointer points to. In order to allocate the data the pointer points to on the stack, several conditions must be true:
-- It must be a local variable whose data size is known at compile time. 
-- The pointer cannot be returned from the function.
+- It must be a local variable whose data size is known at compile time. If the size isn't known you can't make space for it by moving the stack pointer.
+- The pointer cannot be returned from the function. If the pointer variable is returned, the memory that the pointer points to will no longer be valid when the function exits.
 - If the pointer is passed into a function, the compiler must be able to ensure that these conditions still hold.
+When the compiler determines that data can't be stored on the stack we say that the data *escapes* the stack and the compiler stored the data on the heap.
+
+The heap is the memory that's managed by the garbage collector. We won't go into implementation details of the garbage collector algorithm but it is much more complicated than moving a stack pointer. Once there are no more variables on the stack pointing to data that's on the heap, either directly or via a chain of pointers, the data becomes *garbage* and it's the job of the garbage collector to clear it out.
+
+The *escape analysis* done by the Go compiler isn't perfect, there are instances where data that could be stored on the stack escapes to the heap. The compiler has to be conservative though, leaving a value on the stack that needs to be on the heap will lead to references to invalid data causing memory corruption.
+
+There are two performance related problems with storing things on the heap. The first is that the garbage collector takes time to do its work, and that's time taken away from doing the processing your program is written to do. 
+
+The second problem deals with the nature of computer hardware. The fastest way to read from memory(RAM) is to read it sequentially. A slice of struts in Go has all of the data laid out sequentially in memory, making it fast to load and process. A slice of pointers to structs has its data scattered across RAM, making it far slower read and process.
+
+Now we can see why we should use pointers sparingly. You reduce the garbage collector's workload by making sure that as much as possible is stored on the stack. And when the garbage collector does do work, it is optimized to return quickly instead of gathering the most garbage. This approach works when we create less garbage in the first place.
 
 <!--TODO: Add addendum about pointers and escape analysis, will be stored in a separate file -->
+> **_NOTE:_** [Check out this addendum to learn more about heap vs stack allocation](./heap_stack_addendum.md)
 
 ## Tuning the Garbage Collector
 
