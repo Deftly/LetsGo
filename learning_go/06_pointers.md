@@ -1,5 +1,19 @@
 # Pointers
 
+<!--toc:start-->
+- [Pointers](#pointers)
+  - [A Quick Pointer Primer](#a-quick-pointer-primer)
+  - [Pointers Indicate Mutable Parameters](#pointers-indicate-mutable-parameters)
+  - [Pointers Are a Last Resort](#pointers-are-a-last-resort)
+  - [The Zero Value Versus No Value](#the-zero-value-versus-no-value)
+  - [The Difference Between Maps and Slices](#the-difference-between-maps-and-slices)
+  - [Slices as Buffers](#slices-as-buffers)
+  - [Reducing the Garbage Collector's Workload](#reducing-the-garbage-collectors-workload)
+  - [Tuning the Garbage Collector](#tuning-the-garbage-collector)
+  - [Exercises](#exercises)
+  - [Wrapping Up](#wrapping-up)
+<!--toc:end-->
+
 ## A Quick Pointer Primer
 A pointer is a variable that holds the location in memory where a value is stored. A simple visual representation of how the following two variables are stored in memory would look something like this:
 ```go
