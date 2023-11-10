@@ -159,13 +159,89 @@ The only time you should use pointer parameters to modify a variable is when the
 When returning values from a function, you should favor value types. Only use a pointer type as a return type if there is state within the data type that needs to be modified.
 
 ## The Zero Value Versus No Value
+A common usage of pointers in Go is to indicate the difference between a variable or field that's been assigned the zero value and a variable or field that hasn't been assigned a value at all.
 
+However, because pointers also indicate mutability, be careful when using this pattern. It can often be better to use the comma ok idiom and return a value type and a boolean instead.
+
+While a pointer does provide a handy way to indicate no value, if you are not going to modify the value, you should use a value type paired with a boolean instead.
 
 ## The Difference Between Maps and Slices
+We see in the previous section that any modifications made to a map that's passed to a function are reflected in the original variable that was passed in. This is because within the Go runtime maps are implemented as a pointer to a struct.
+
+Because of this we should be careful about using maps for input parameters or return values, especially on public APIs. Maps are often a bad choice because there's nothing that explicitly defines what keys are in the map, so the only way to know what they are is to trace through your code. Rather than passing a map around it's often better to use a struct.
+
+> **_NOTE:_** There are situations where a map input parameter or return value makes sense. A struct requires you to name its fields at compile time. If they keys for your data aren't know at compile time, a map can work.
+
+With slices, we saw that we can modify its contents but we can't use `append` to change the length of the original variable, even if the slice has a capacity greater than its length. This is because a slice is implemented as a struct with three fields: an `int` field for length, `int` field for capacity, and a pointer to a block of memory.
+
+![memory_layout_of_a_slice](./assets/memory_layout_of_a_slice.png)
+
+When a slice is copied to a different variable or passed to a function, a copy is made of the length, capacity, and the pointer:
+
+![a_slice_and_its_copy](./assets/a_slice_and_its_copy.png)
+
+Changing the values in the slice changes the memory that the pointer points to, so the changes are seen in both the copy and the original:
+
+![modifying_a_slice](./assets/modifying_a_slice.png)
+
+If the slice copy is appended to and there is enough capacity in the slice for the new values, the length changes in the copy and the new values are stored in the shared block of memory. However, the length in the original slice remains unchanged. This means the Go runtime prevents the original slice from seeing those values:
+
+![changing_slice_copy_length](./assets/changing_slice_copy_length.png)
+
+If the slice copy is appended to and there isn't enough capacity a new bigger block of memory is allocated, values are copied over, and the pointer, length, and capacity fields in the copy are updated. Now each slice variable points to a different memory block:
+
+![changing_capacity_changes_storage](./assets/changing_capacity_changes_storage.png)
+
+As the main linear data structure in Go, slice are frequently passed around. By default, you should assume that a slice is not modified by a function. Your function's documentation should specify if it modifies the slice's contents.
+
+> **_NOTE:_** The reason you can pass a slice of any size to a function is that the data type that's passed to the function is the same size for any slice: a struct of two `int` values and a pointer.
 
 ## Slices as Buffers
+When reading data from an external resource(file, network connection, etc.) many languages use code like this:
+```
+r = open_resource()
+while r.has_data() {
+  data_chunk = r.next_chunk()
+  process(data_chunk)
+}
+close(r)
+```
+The problem with this pattern is that every time you iterate through the `while` loop, you allocate another `data_chunk` even though each one is only used once. This creates lots of unnecessary memory allocations which means more work for the garbage collector.
+
+Writing idiomatic Go means avoiding unneeded allocations, so instead of returning a new allocation each time you read from a data source you can create a slice of bytes and use it as a buffer:
+```go
+file, err := os.Open(fileName)
+if err != nil {
+  return err
+}
+defer file.Close()
+data := make([]byte, 100)
+for {
+  count, err := file.Read(data)
+  process(data[:count])
+  if err != nil {
+    if errors.Is(err, io.EOF) {
+      return nil
+    }
+    return err
+  }
+}
+```
+In this code we create a buffer of 100 bytes and each time through the loop we copy the next block of bytes(up to 100) into the slice so that it can be processed.
 
 ## Reducing the Garbage Collector's Workload
+When programmers talk about "garbage" they are referring to data that has no more pointers pointing to it. Once this happens, the memory that data takes up can be reused. If the memory isn't recovered the program's memory usage would continue to grow until the computer runs out of RAM. The job of the garbage collector is to automatically detect unused memory and recover it so it can be reused.
+
+A stack is a consecutive block of memory. Every function call in a thread shares the same stack. Allocating memory on the stack is fast and simple. A *stack pointer* tracks the last location where memory was allocated. Allocating additional memory is done by changing the value of the stack pointer. When a function is invoked, a new *stack frame* is created for the function's data. Local variables are stored on the stack, along with parameters passed into the function. Each new variables makes the stock pointer by the size of the value. When a function exits, it return values are copied back to the calling function and the stack pointer is moved back to the beginning of the stack frame for the exited function, deallocating all of the stack memory that was used by the function's local variables and parameters.
+
+To store something on the stack you must know exactly how big it is at compile time. The value types in Go(primitive values, arrays, and structs) all have known sizes at compile time, meaning they can be stored on the stack instead of the heap. The size of a pointer type is also known and can be stored on the stack.
+
+The rules are more complicated when it comes to the data that the pointer points to. In order to allocate the data the pointer points to on the stack, several conditions must be true:
+- It must be a local variable whose data size is known at compile time. 
+- The pointer cannot be returned from the function.
+- If the pointer is passed into a function, the compiler must be able to ensure that these conditions still hold.
+
+<!--TODO: Add addendum about pointers and escape analysis, will be stored in a separate file -->
 
 ## Tuning the Garbage Collector
 

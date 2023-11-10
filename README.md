@@ -1,3 +1,3 @@
 # Resources
 
-## [Learning Go Notes](./learning_go/)
+## [Learning Go Notes](./learning_go/README.md)
