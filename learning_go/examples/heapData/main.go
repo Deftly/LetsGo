@@ -21,7 +21,7 @@ type C struct {
 func makeAPointer() *A {
 	// The data pointed to by a, a.b, and a.b.c are allocated on the heap
 	a := &A{&B{&C{"hello"}}}
-
+	// This function specifies a function to run when something is garbage collected
 	runtime.SetFinalizer(a.b.c, func(c *C) {
 		fmt.Println("a.b.c with value", c.field, "is garbage collected")
 	})
@@ -41,5 +41,6 @@ func main() {
 	fmt.Println(aPointer)
 	// Force a garbage collection
 	runtime.GC()
+	// Give the finalizer a chance to run(it will)
 	time.Sleep(20)
 }

@@ -256,7 +256,29 @@ Now we can see why we should use pointers sparingly. You reduce the garbage coll
 > **_NOTE:_** [Check out this addendum to learn more about heap vs stack allocation](./heap_stack_addendum.md)
 
 ## Tuning the Garbage Collector
+The Go runtime provides users a couple of setting to control the heap's size. The first is the `GOGC` environment variable. The garbage collector looks at the heap size at the end of a garbage collection cycle and uses the formula `CURRENT_HEAP_SIZE + CURRENT_HEAP_SIZE*GOGC/100` to calculate the heap size that needs to be reached to trigger the next garbage collection cycle.
+
+<!--TODO: Add note about actual heap size calculation-->
+<!-- > **_NOTE:_** -->
+
+By default `GOGC` is set to `100` which means the heap size that triggers the next collection is roughly double the heap size at the end of the current collection. Setting `GOGC` to a smaller value will decrease the target heap size and setting a larger value will increase it.
+
+Setting `GOGC` to `off` disables garbage collection. This makes your programs run faster, however long running processes can potentially use all available memory on the system.
+
+`GOMEMLIMIT` specifies a limit on the total amount of memory your program is allowed to use. By default it is set to `math.MaxInt64`(this basically disables it since your system is unlikely to have that much memory). The value for `GOMEMLIMIT` is specified in bytes, but you can optionally use the suffixes `B`, `KiB`, `MiB`, `GiB`, and `TiB`. `GOMEMLIMIT=3GiB` sets the memory limit to 3 Gigabytes(3,221,225,472 bytes).
+
+If there are sudden temporary spikes in memory usage, relying on `GOGC` alone might result in a situation where the maximum heap size exceeds the available memory. This can cause memory to swap to disk which is very slow and depending on the operating system and its setting can cause your program to crash. Specifying a maximum memory limit prevents the heap from growing beyond the system's resources.
+
+`GOMEMLIMIT` is a *soft* limit that can be exceeded in certain circumstances. There is a common problem in garbage collected systems where the collector is unable to free enough memory to get within a memory limit or the garbage collection cycles are rapidly triggered because a program is repeatedly hitting the limit. This is called *thrashing* and results in the program doing nothing but run the garbage collector. If the Go runtime detects thrashing it chooses to end the current garbage collection cycle and exceed the limit. Because of this you should set the `GOMEMLIMIT` below the absolute maximum amount of available memory.
+
+> **_NOTE:_** Read [Guide to the Go Garbage Collector](https://go.dev/doc/gc-guide) from Go's development team to learn more about `GOGC`, `GOMEMLIMIT` and the garbage collector in Go.
 
 ## Exercises
+1. Create a struct named `Person` with three fields: `FirstName` and `LastName` of type `string` and `Age` of type `int`. Write a function called `MakePerson` that takes in `firstName`, `lastName`, and `age` and returns a `Person`. Write a second function `MakePersonPointer` that takes in `firstName`, `lastName`, and `age` and returns a `*Person`. Call both from `main`. Compile your program with `go build -gcflags="-m"`. This both compiles your code and prints out which values escape to the heap.
+2. Write two functions. The `UpdateSlice` function takes in a `[]string` and a `string`. It sets the last position in the passed-in slice to the passed-in `string`. At the end of `UpdateSlice`, print the slice after making the change. The `GrowSlice` function also takes in a `[]string` and a `string`. It appends the `string` onto the slice. At the end of `GrowSlice`, print the slice after making the change. Call these functions from `main`. Print out the slice before each function is called and after each function is called. Be sure that you understand why some changes are visible in `main` and why some are not.
+3. Write a program that builds a `[]Person` with 10,000,000 entries (they could all be the same names and ages). See how long it takes to run. Change the value of `GOGC` and see how that effects the time it takes for the program to complete. Set the environment variable `GODEBUG=gctrace=1` to see when garbage collections happen and see how changing `GOGC` changes the number of garbage collections. What happens if you create the slice with a capacity of 10,000,000?
+
+> [Solutions]()
 
 ## Wrapping Up
+This section covers pointers, what they are, how to use them, and when to use them. In the [next section](./07_types_methods_and_interfaces.md) we'll cover Go's implementation of methods, interfaces, and types.
