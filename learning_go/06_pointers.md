@@ -266,7 +266,6 @@ The second problem deals with the nature of computer hardware. The fastest way t
 
 Now we can see why we should use pointers sparingly. You reduce the garbage collector's workload by making sure that as much as possible is stored on the stack. And when the garbage collector does do work, it is optimized to return quickly instead of gathering the most garbage. This approach works when we create less garbage in the first place.
 
-<!--TODO: Add addendum about pointers and escape analysis, will be stored in a separate file -->
 > **_NOTE:_** [Check out this addendum to learn more about heap vs stack allocation](./heap_stack_addendum.md)
 
 ## Tuning the Garbage Collector
