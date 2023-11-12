@@ -78,9 +78,56 @@ Go considers both pointer and value receiver methods to be in the *method set* f
 Do not write getter and setter method for Go structs unless you need them to meet an interface([We'll cover them shortly](#a-quick-lesson-on-interfaces)) or you need to update multiple fields as a single operation/the update isn't a straightforward assignment. Reserve methods for business logic.
 
 ### Code Your Methods for nil Instances
+In most languages if you try to invoke a method on a `nil` instance you get some sort of error. In Go if the method has a value receiver you'll get a panic since there is no value being pointed to. If the method has a pointer receiver, it can work if the method is written to handle the possibility of a `nil` instance.
 
+Here's an implementation of a binary tree that takes advantage of `nil` values for the receiver:
+```go
+type IntTree struct {
+	left, right *IntTree
+	val         int
+}
+
+func (it *IntTree) Insert(val int) *IntTree {
+	if it == nil {
+		return &IntTree{val: val}
+	}
+	if val < it.val {
+		it.left = it.left.Insert(val)
+	} else if val > it.val {
+		it.right = it.right.Insert(val)
+	}
+	return it
+}
+
+func (it *IntTree) Contains(val int) bool {
+	switch {
+	case it == nil:
+		return false
+	case val < it.val:
+		return it.left.Contains(val)
+	case val > it.val:
+		return it.right.Contains(val)
+	default:
+		return true
+	}
+}
+
+func main() {
+	it := &IntTree{}
+	it = it.Insert(5)
+	it.Insert(3)
+	it.Insert(10)
+	it.Insert(2)
+	fmt.Println(it.Contains(2))  // true
+	fmt.Println(it.Contains(12)) // false
+}
+```
+Pointer receivers work like pointer function parameters, it's a copy of the pointer that's passed into the method. Just like `nil` parameters passed to functions, if you change the copy of the pointer, you haven't changed the original. This means that you can't write a pointer receiver method that handles `nil` and makes the original pointer non-nil.
+
+If your method has a pointer receiver and won't work for a `nil` receiver you have to decide how to handle it. You could treat it as a fatal flaw, in this case just let the code panic. If a nil receiver is something that is recoverable, check for `nil` and return an error(errors will be covered in [section 9](./09_errors.md))
 
 ### Methods Are Functions Too
+
 
 ### Functions Versus Methods
 
