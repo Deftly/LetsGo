@@ -127,13 +127,57 @@ Pointer receivers work like pointer function parameters, it's a copy of the poin
 If your method has a pointer receiver and won't work for a `nil` receiver you have to decide how to handle it. You could treat it as a fatal flaw, in this case just let the code panic. If a nil receiver is something that is recoverable, check for `nil` and return an error(errors will be covered in [section 9](./09_errors.md))
 
 ### Methods Are Functions Too
+Methods in Go are so much like functions that you can use a method in place of a function any time there's a variable or parameter of a function type.
+```go
+type Adder struct {
+	start int
+}
 
+func (a Adder) AddTo(val int) int {
+	return a.start + val
+}
+
+func main() {
+	myAdder := Adder{start: 10}
+	fmt.Println(myAdder.AddTo(5)) // 15
+
+	// You can assign the method to a variable or pass it to a parameter
+	// of type func(int) int. This is called a method value
+	f1 := myAdder.AddTo
+	fmt.Println(f1(10)) // 20
+
+	// This is called a method expression. When using a method expression the
+	// first parameter is the receiver for the method
+	f2 := Adder.AddTo
+	fmt.Println(f2(myAdder, 15)) // 25
+}
+```
+We'll see how to leverage method values and method expressions when we look at dependency injection [later in this section](#implicit-interfaces-make-dependency-injection-easier).
 
 ### Functions Versus Methods
+Any time your logic depends on values that are configured on startup or changed while your program is running, those values should be stored in a struct and that logic should be implemented as a method. If your logic only depends on the input parameters, then it should be a function.
 
 ### Type Declarations Aren't Inheritance
+In addition to declaring types based on built-in Go types and struct literals, you can declare a user-defined type based on another user-defined type:
+```go
+type HighScore Score
+type Employee Person
+```
+Declaring a type based on another type looks like inheritance, but that isn't the case in Go. You can't assign an instance of type `HighScore` to a variable of type `Score` or vice versa without a type conversion. Also, any methods defined on `Score` aren't defined on `HighScore`.
+```go
+// assigning untyped constants is valid
+var i int = 300
+var s Score = 100
+var hs HighScore = 200
+hs = s            // compilation error
+s = i             // compilation error
+s = Score(i)      // ok
+hs = HighScore(s) // ok
+```
+User defined types whose underlying types are built-in types can be assigned literals and constants compatible with the underlying type, as well as be used with operators for those types.
 
 ### Types Are Executable Documentation
+Types are documentation. They make code clearer by providing a name for a concept and describing the kind of data that is expected. It's clearer for someone reading your code when a method has a parameter of type `Percentage` than of type `int`, and it's harder for it to be invoked with an invalid value.
 
 ## iota Is for Enumerations-Sometimes
 
