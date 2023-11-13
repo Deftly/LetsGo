@@ -73,6 +73,7 @@ You might have noticed that we were able to call the pointer receiver method eve
 
 Go considers both pointer and value receiver methods to be in the *method set* for a pointer instance. For a value instance, only the value receiver methods are in the method set. This concept will be important when we talk about interfaces in just a little bit.
 
+<!--TODO: Finish method set addendum-->
 > **_NOTE:_**: Go's automatic conversion from pointer types to value types and vice-versa is syntactic sugar and is independent of the method set concept. Read the [addendum on method sets](./method_set_addendum.md) for more details on why the method set of pointer instances have both pointer and value receivers, but the method set of value instances only have value receiver methods.
 
 Do not write getter and setter method for Go structs unless you need them to meet an interface([We'll cover them shortly](#a-quick-lesson-on-interfaces)) or you need to update multiple fields as a single operation/the update isn't a straightforward assignment. Reserve methods for business logic.
@@ -199,8 +200,105 @@ The first constant in the `cosnt` block has the type specified and its value is 
 If you were to insert a new identifier in the middle of your list of literals, all of the subsequent identifiers will be renumbered. This can break your application if those constant represented values in another system or database. Given this limitation only use `iota`-based enumerations to differentiate between a set of values without caring what the value is behind the scenes. If the actual value matters you should specify it explicitly.
 
 ## Use Embedding for Composition
+Go encourages code reuse via built-in support for composition and promotion:
+```go
+type Employee struct {
+	Name string
+	ID   string
+}
 
+func (e Employee) Description() string {
+	return fmt.Sprintf("%s (%s)", e.Name, e.ID)
+}
+
+type Manager struct {
+	Employee // This is an embedded field
+	Reports []Employee
+}
+
+func (m Manager) FindNewEmployees() []Employee {
+	// do business logic
+}
+
+func main() {
+	m := Manager{
+		Employee: Employee{
+			Name: "Bob",
+			ID:   "12345",
+		},
+		Reports: []Employee{},
+	}
+	fmt.Println(m.ID)            // 12345
+	fmt.Println(m.Description()) // Bob (12345)
+}
+```
+The `Manager` struct contains a field of type `Employee`, but no name is assigned to that field. This makes `Employee` and embedded field. Any fields or methods declared on an embedded field are *promoted* to the containing struct and can be invoked directly on it.
+
+> **_NOTE:_** You can embed any type within a struct, not just another struct. This promotes the methods on the embedded type to the containing struct.
+
+If the containing struct has fields or methods with the same name as an embedded field, you need to use the embedded field's type to refer to the obscured fields or methods:
+```go
+type Inner struct {
+	X int
+}
+
+type Outer struct {
+	Inner
+	X int
+}
+
+func main() {
+	o := Outer{
+		Inner: Inner{
+			X: 10,
+		},
+		X: 20,
+	}
+	fmt.Println(o.X)       // 20
+	fmt.Println(o.Inner.X) // 10
+}
+```
 ## Embedding Is Not Inheritance
+Many developers try to understand embedding by treating it as inheritance, don't do this. You cannot assign a variable of type `Manager` to a variable of type `Employee`. To access the `Employee` field in `Manager` you must do so explicitly:
+```go
+var eFail Employee = m        // compilation error: cannot use m (type Manger) as type Employee in assignment
+var eOk Employee = m.Employee // ok
+```
+<!--TODO: Finish dynamic dispatch addendum---->
+There is no *dynamic dispatch*(see [dynamic dispatch addendum](./dynamic_dispatch_addendum.md)) for concrete types in Go. The methods on an embedded field have no idea that they are embedded. If you have a method on an embedded field that calls another method on the embedded field, and the containing struct has a method of the same name, the method on the embedded field is invoked, not the method on the containing struct:
+```go
+type Inner struct {
+	A int
+}
+
+func (i Inner) IntPrinter(val int) string {
+	return fmt.Sprintf("Inner: %d", val)
+}
+
+func (i Inner) Double() string {
+	return i.IntPrinter(i.A * 2)
+}
+
+type Outer struct {
+	S string
+	Inner
+}
+
+func (o Outer) IntPrinter(val int) string {
+	return fmt.Sprintf("Outer: %d", val)
+}
+
+func main() {
+	o := Outer{
+		Inner: Inner{
+			A: 10,
+		},
+		S: "Hello",
+	}
+	fmt.Println(o.Double()) // 20
+}
+```
+While embedding one concrete type inside another doesn't allow you to treat the outer type as the inner type, the methods on an embedded field do count toward the *method set* of the containing struct. This is important when it comes to implementing an interface.
 
 ## A Quick Lesson on Interfaces
 
