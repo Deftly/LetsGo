@@ -180,6 +180,23 @@ User defined types whose underlying types are built-in types can be assigned lit
 Types are documentation. They make code clearer by providing a name for a concept and describing the kind of data that is expected. It's clearer for someone reading your code when a method has a parameter of type `Percentage` than of type `int`, and it's harder for it to be invoked with an invalid value.
 
 ## iota Is for Enumerations-Sometimes
+Go doesn't have an enumeration type, instead it has `iota`, which lets you assign an increasing value to a set of constants.
+
+When using `iota` it's best practice to first define a type based on `int` that will represent all of the valid values. Then we define a `const` block to define a set of values for the type:
+```go
+type MailCategory int
+
+const (
+	Uncategorized MailCategory = iota // 0
+	Personal                          // 1
+	Spam                              // 2
+	Social                            // 3
+	Advertisement                     // 4
+)
+```
+The first constant in the `cosnt` block has the type specified and its value is set to `iota`. The subsequent lines have neither the type or value assigned to it. The Go compiler will repeat the type assignment to all of the subsequent constants in the block, the value of `iota` increments for each constant in the block starting with `0`.
+
+If you were to insert a new identifier in the middle of your list of literals, all of the subsequent identifiers will be renumbered. This can break your application if those constant represented values in another system or database. Given this limitation only use `iota`-based enumerations to differentiate between a set of values without caring what the value is behind the scenes. If the actual value matters you should specify it explicitly.
 
 ## Use Embedding for Composition
 
