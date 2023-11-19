@@ -1,6 +1,6 @@
 # Dynamic Dispatch
 <!--TODO: Pull info from various sources about dynamic dispatch and why go doesn't have it-->
-
+In-progress
 <!-- Dynamic dispatch is a key concept in object-oriented programming, often associated with polymorphism, where the call to an overridden method is resolved at runtime. This contrasts with static dispatch, where the method call is resolved at compile time. -->
 <!-- Dynamic Dispatch -->
 <!---->

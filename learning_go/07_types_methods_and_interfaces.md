@@ -301,12 +301,119 @@ func main() {
 While embedding one concrete type inside another doesn't allow you to treat the outer type as the inner type, the methods on an embedded field do count toward the *method set* of the containing struct. This is important when it comes to implementing an interface.
 
 ## A Quick Lesson on Interfaces
+A their core, interfaces are simple. Like other user-defined types, you use the `type` keyword to declare them:
+```go
+// The Stringer interface in the fmt package
+type Stringer interface {
+  String() string
+}
+```
+An interface literal lists the methods that must be implemented by a concrete type to meet the interface. These defined methods are the method set of the interface. We mentioned earlier that the method set of a pointer instance contains the methods defined with both pointer and value receivers, while the method set of a value instance only contains methods with value receivers. Here's an example:
+```go
+type Counter struct {
+	lastUpdated time.Time
+	total       int
+}
+
+func (c *Counter) Increment() {
+	c.total++
+	c.lastUpdated = time.Now()
+}
+
+func (c Counter) String() string {
+	return fmt.Sprintf("total: %d, last updated: %v", c.total, c.lastUpdated)
+}
+
+type Incrementer interface {
+	Increment()
+}
+
+func main() {
+	var myStringer fmt.Stringer
+	var myIncrementer Incrementer
+	pointerCounter := &Counter{}
+	valueCounter := Counter{}
+
+	myStringer = pointerCounter    // ok
+	myStringer = valueCounter      // ok
+	myIncrementer = pointerCounter // ok
+	myIncrementer = valueCounter   // compile-time error
+	// cannot use valueCounter (variable of type Counter) as Incrementer value in
+  // assignment: Counter does not implement Incrementer (method Increment has pointer receiver)
+
+	fmt.Println(myStringer, myIncrementer)
+}
+```
+Like other types, interfaces can be declared in any block. Also, the convention is to name them with "er" endings, here are some examples: `io.Reader`, `io.Closer`, `io.ReadCloser`, `json.Marshaler`, `http.Handler`.
 
 ## Interfaces Are Type-Safe Duck Typing
+What makes Go's interfaces special is that they are implemented *implicitly*, concrete types do not need to declare that they implement an interface. If the method set for a concrete type contains all of the methods in the method set for an interface, the concrete type implements the interface.
+<!--TODO: Finish type-safety addendum-->
+This implicit behavior enables both [type-safety] and decoupling, bridging the functionality in both static and dynamic languages.
+
+Dynamically typed languages like Python, Ruby, and JavaScript don't have interfaces. Instead they use "duck typing", which is comes from the expression "If it walks like a duck and quacks like a duck, it's a duck.". The concept is that you can pass an instance of a type as a parameter as long as the function can find a method to invoke that it expects.
+
+Interfaces can be shared, we've seen examples in the standard library that are used for input and output. If you write your code to work with `io.Reader` and `io.Writer`, it will function correctly whether it is writing to a file on local disk or a value in memory.
+
+Standard interfaces also encourage the *decoration pattern*. It's common in Go to write factory functions that take in an instance of an interface and return another type that implements the same interface. Say we have the following function definition:
+```go
+func process(r io.Reader) error
+```
+We can process data from a file with the following:
+```go
+r, err := os.Open(fileName)
+if err != nil {
+  fmt.Println(err)
+}
+defer r.Close()
+return process(r)
+```
+The `os.File` instance returned by `os.Open` meets the `io.Reader` interface and can be used in any code that read in data. If the file is gzip-compressed, we can wrap the `io.Reader` in another `io.Reader`:
+```go
+r, err := os.Open(fileName)
+if err != nil {
+  fmt.Println(err)
+}
+defer r.Close()
+gz, err := gzip.NewReader(r)
+if err != nil {
+  fmt.Println(err)
+}
+defer gz.Close()
+return process(r)
+```
+Now the code that was reading from an uncompressed file is reading from a compressed file instead.
+
+> **_NOTE:_** If there's an interface in the standard library that describes what your code needs, use it.
+
+It's fine for a type that meets an interface to specify additional methods that aren't part of the interface.
 
 ## Embedding and Interfaces
+You can embed an interface in an interface. For example, the `io.ReadCloser` interface is built out of an `io.Reader` and an `io.Closer`:
+```go
+type Reader interface {
+	Read(p []byte) (n int, err error)
+}
 
+type Closer interface {
+	Close() error
+}
+
+type ReadCloser interface {
+	Reader
+	Closer
+}
+```
 ## Accept Interfaces, Return Structs
+We've already covered why functions should accept interfaces: they make your code more flexible and explicitly declare exactly what functionality is being used.
+
+The primary reason why your functions should return concrete types is they make it easier to update a function's return values in new versions of your code. When you return a concrete type, new methods and fields can be added without breaking existing code that calls the function, because the new fields and methods are ignored. However, if you add a new method to an interface all existing implementations of that interface must be updated or your code breaks.
+
+Instead of writing a single factory function that returns different instances behind an interface based on input parameters, try to write separate factory functions for each concrete type. In some situations(such as a parser that returns different kinds of token), it's unavoidable and you have no choice but to return an interface.
+
+Errors are the exception to this rule. Go functions and methods often declare a return parameter of the `error` interface type. With `error` it's quite likely that different implementations of the interface could be returned, so you need to use an interface to handle all possible options, as interfaces are the only abstract type in Go.
+
+The one potential drawback to this pattern of accepting interfaces and returning structs has to do with heap allocations. We [previously covered](./06_pointers.md#reducing-the-garbage-collectors-workload) how reducing heap allocations improves performance. Returning a struct avoid a heap allocation which is good. However, when invoking a function with parameters of interface types, a heap allocation occurs for each of the interface parameters. Figuring out the trade-off between better abstraction and better performance should be done over the life of your program. Always write your code so that it is readable and maintainable. If you find that your program is too slow *and* you have profiled it *and* you have determined that the performance problems are due to heap allocations caused by an interface parameter, then you should rewrite the function to use a concrete type parameter.
 
 ## Interfaces and nil
 

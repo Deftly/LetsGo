@@ -1,5 +1,6 @@
 # Type Safety
 <!--TODO: Pull info about dynamic vs static typing and their implications on type safety-->
+In-progress
 
 <!-- Type safety is a critical concept in computer science, especially in the context of programming languages. It refers to the prevention of operations on values which are not of the appropriate data type. To understand this, let's break down the concept into two key areas: type systems in programming languages and the implications of type safety. -->
 <!-- Type Systems in Programming Languages -->
