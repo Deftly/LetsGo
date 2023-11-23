@@ -416,10 +416,95 @@ Errors are the exception to this rule. Go functions and methods often declare a 
 The one potential drawback to this pattern of accepting interfaces and returning structs has to do with heap allocations. We [previously covered](./06_pointers.md#reducing-the-garbage-collectors-workload) how reducing heap allocations improves performance. Returning a struct avoid a heap allocation which is good. However, when invoking a function with parameters of interface types, a heap allocation occurs for each of the interface parameters. Figuring out the trade-off between better abstraction and better performance should be done over the life of your program. Always write your code so that it is readable and maintainable. If you find that your program is too slow *and* you have profiled it *and* you have determined that the performance problems are due to heap allocations caused by an interface parameter, then you should rewrite the function to use a concrete type parameter.
 
 ## Interfaces and nil
+To understand the relationship between interfaces and `nil` requires understanding a little bit about how interfaces are implemented. In The Go runtime, interfaces are implemented as a struct with two pointer fields, one for the value and one for the type of the value. As long as the type field is non-nil, the interface is non-nil.
+
+For an interface to be considered `nil` *both* the type and the value must be `nil`:
+```go
+var pointerCounter *Counter
+fmt.Println(pointerCounter == nil) // true
+var incrementer Incrementer
+fmt.Println(incrementer == nil) // true
+incrementer = pointerCounter
+fmt.Println(incrementer == nil) // false
+```
+What `nil` indicates for a variable with an interface type is whether or not you can invoke methods on it. We saw earlier that you can invoke methods on `nil` concrete instances, so it makes sense that you can invoke methods on an interface that was assigned a `nil` concrete instance. If an interface is `nil`, invoking any methods on it triggers a panic.
+
+Because an interface instance with a non-nil type is not equal to `nil`, it isn't straightforward to tell whether or not the value associated with the interface is `nil`. To find out we need to use reflection(we'll cover this [later](./16_here_be_dragons_reflect_unsafe_and_cgo.md#use-reflection-to-check-if-an-interfaces-value-is-nil)).
 
 ## Interfaces are comparable
+Just as an interface is equal to `nil` only if its type and value fields are both `nil`, two instances of an interface type are only equal if their types are equal and their values are equal. But what happens if the type isn't comparable? Let's look at an example:
+```go
+type Doubler interface {
+	Double()
+}
+
+type DoubleInt int
+
+func (d *DoubleInt) Double() {
+	*d = *d * 2
+}
+
+type DoubleIntSlice []int
+
+func (d DoubleIntSlice) Double() {
+	for i := range d {
+		d[i] = d[i] * 2
+	}
+}
+```
+The `*DoubleInt` type is comparable(all pointer types are) and the `DoubleIntSlice` is not comparable(slices aren't comparable).
+```go
+func DoublerCompare(d1, d2 Doubler) {
+	fmt.Println(d1 == d2)
+}
+
+func main() {
+	var di DoubleInt = 10
+	var di2 DoubleInt = 10
+	dis := DoubleIntSlice{1, 2, 3}
+	dis2 := DoubleIntSlice{1, 2, 3}
+	DoublerCompare(&di, &di2) // false - the types match but the pointers point to different addresses
+	DoublerCompare(&di, dis)  // false - the types do not match
+	DoublerCompare(dis, dis2) // compiles but panics at runtime: runtime error: comparing uncomparable type main.DoubleIntSlice
+}
+```
+Also be aware that the key of a map must be comparable, so a map can be defined to have an interface as a key:
+```go
+m := map[Doubler]int{}
+```
+Adding a key-value pair to this map where the key isn't comparable will also trigger a panic.
+
+Given this behavior be careful using `==` and `!=` with interfaces or using an interface as a map key as this can easily generate a panic that will crash your program. To be extra-safe, you can use the `Comparable` method on `reflect.Value` to inspect an interface before using it with `==` or `!=`(We'll learn more about reflection [later on](./16_here_be_dragons_reflect_unsafe_and_cgo.md#reflection-lets-us-work-with-types-at-runtime)).
 
 ## The Empty Interface Says Nothing
+Sometimes you need a way to say that a variable could store a value of any type. Go uses an *empty interface*, `interface{}`, to represent this:
+```go
+var i interface{}
+i = 20
+i = "hello"
+i = struct {
+  FirstName string
+  LastName  string
+}{"Fred", "Fredson"}
+````
+> **_NOTE:_** `interface{}` isn't special case syntax. An empty interface states that the variable can store any value whose type implements zero or more methods, which happens to match every type in Go.
+
+To improve readability, Go added `any` as a type alias for `interface{}`.
+
+Because an empty interface doesn't tell you anything about the value it represents, there isn't a lot you can do with it. A common use of `any` is a placeholder for data of uncertain schema that's read from an external source, like a JSON file:
+```go
+data := map[string]any{}
+contents, err := os.ReadFile("testdata/sample.json")
+if err != nil {
+  return err
+}
+json.Unmarshal(contents, &data) // the contents are now in the data map
+```
+> **_NOTE:_** User-created data containers that were written before generics were added to Go use an empty interface to store a value(we'll cover generics in [next section](./08_generics.md)). Now that generics are part of Go, use them for any newly created data containers.
+
+If you see a function that takes in an empty interface, it's likely that it is using reflection to either populate or read the value.
+
+These situation should be relatively rare and you should avoid using `any`. Go is designed as a strongly typed language and attempts to work around this are unidiomatic. 
 
 ## Type Assertions and Type Switches
 
