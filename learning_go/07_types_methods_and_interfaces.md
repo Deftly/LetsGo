@@ -616,6 +616,25 @@ func walkTree(t *treeNode) (int, error) {
 You can see the full implementation of this example [here](./examples/operationsTree/main.go)
 
 ## Function Types Are a Bridge to Interfaces
+Go allows methods on *any* user-defined type including user-defined functions. This isn't just a corner case but actually quite useful as it allows function to implement interfaces. The most common use of this is for HTTP handlers. An HTTP handler processes an HTTP server request and is defined by an interface:
+```go
+type Handler interface {
+  ServeHTTP(http.ResponseWriter, *http.Request)
+}
+```
+By using a type conversion to `http.HandlerFunc`, any function that has the signature `func(http.ResponseWriter, *http.Request)` can be used as an `http.Handler`:
+```go
+type HandlerFunc func(http.ResponseWriter, *http.Request)
+
+func (f HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+  f(w, r)
+}
+```
+This lets you implement HTTP handlers using functions, methods, or closures using the exact same code path as the one used for other types that meet the `http.Handler` interface.
+
+The question then becomes, when should your function or method specify an input parameter of a function type and when should you use an interface?
+
+If your single function is likely to depend on many other functions or other state that's not specified in its input parameters, use an interface parameter and define a function type to bridge a function to the interface. However if it's a simple function then a parameter of function type is a good choice.
 
 ## Implicit Interfaces Make Dependency Injection Easier
 
