@@ -1,5 +1,34 @@
 # Types, Methods, and Interfaces
 
+<!--toc:start-->
+- [Types, Methods, and Interfaces](#types-methods-and-interfaces)
+  - [Types in Go](#types-in-go)
+  - [Methods](#methods)
+    - [Pointer Receivers and Value Receivers](#pointer-receivers-and-value-receivers)
+    - [Code Your Methods for nil Instances](#code-your-methods-for-nil-instances)
+    - [Methods Are Functions Too](#methods-are-functions-too)
+    - [Functions Versus Methods](#functions-versus-methods)
+    - [Type Declarations Aren't Inheritance](#type-declarations-arent-inheritance)
+    - [Types Are Executable Documentation](#types-are-executable-documentation)
+  - [iota Is for Enumerations-Sometimes](#iota-is-for-enumerations-sometimes)
+  - [Use Embedding for Composition](#use-embedding-for-composition)
+  - [Embedding Is Not Inheritance](#embedding-is-not-inheritance)
+  - [A Quick Lesson on Interfaces](#a-quick-lesson-on-interfaces)
+  - [Interfaces Are Type-Safe Duck Typing](#interfaces-are-type-safe-duck-typing)
+  - [Embedding and Interfaces](#embedding-and-interfaces)
+  - [Accept Interfaces, Return Structs](#accept-interfaces-return-structs)
+  - [Interfaces and nil](#interfaces-and-nil)
+  - [Interfaces are comparable](#interfaces-are-comparable)
+  - [The Empty Interface Says Nothing](#the-empty-interface-says-nothing)
+  - [Type Assertions and Type Switches](#type-assertions-and-type-switches)
+  - [Use Type Assertions and Type Switches Sparingly](#use-type-assertions-and-type-switches-sparingly)
+  - [Function Types Are a Bridge to Interfaces](#function-types-are-a-bridge-to-interfaces)
+  - [Implicit Interfaces Make Dependency Injection Easier](#implicit-interfaces-make-dependency-injection-easier)
+  - [Go Isn't Particularly Object-Oriented(and That's Great)](#go-isnt-particularly-object-orientedand-thats-great)
+  - [Exercises](#exercises)
+  - [Wrapping Up](#wrapping-up)
+<!--toc:end-->
+
 ## Types in Go
 ```go
 type Person struct {
@@ -637,8 +666,141 @@ The question then becomes, when should your function or method specify an input 
 If your single function is likely to depend on many other functions or other state that's not specified in its input parameters, use an interface parameter and define a function type to bridge a function to the interface. However if it's a simple function then a parameter of function type is a good choice.
 
 ## Implicit Interfaces Make Dependency Injection Easier
+Over time developers will be asked to update programs to fix bugs, add features, and run in new environments. This means that you should structure your programs in ways that make them easier to modify. One way to do this is through *decoupling* code, so that changes to different parts of a program have no effect on each other.
 
-## Wire
+One technique to ease decoupling is called *dependency injection*, which is the concept that your code should explicitly specify the functionality it needs to perform its task.
+
+One of the benefits of Go's implicit interfaces is that they make dependency injection easy. Other languages of use large complicated frameworks to inject their dependencies, in Go this can be implemented without any additional libraries.
+
+To demonstrate let's build a very simple web application(we'll cover Go's built in HTTP server support [later](./13_the_standard_library.md#the-server)). We'll start with a utility logger function:
+```go
+func LogOutput(message string) {
+	fmt.Println(message)
+}
+```
+Next we'll create a data store, a retrieval function and a factory function to create an instance of our data store:
+```go
+type SimpleDataStore struct {
+	userData map[string]string
+}
+
+func (s SimpleDataStore) UserNameForID(userID string) (string, bool) {
+	name, ok := s.userData[userID]
+	return name, ok
+}
+
+func NewSimpleDataStore() SimpleDataStore {
+	return SimpleDataStore{
+		userData: map[string]string{
+			"1": "Fred",
+			"2": "Mary",
+			"3": "Pat",
+		},
+	}
+}
+```
+Next we'll want to write some business logic that looks up a user and says hello or goodbye. This business logic needs a data store and the ability to log when it is invoked. However, we don't want to force it to depend on `LogOutput` or `SimpleDataStore` since we might want to use a different logger or data store later on. To handle this we'll create interfaces to describe what our business logic needs:
+```go
+type DataStore interface {
+	UserNameForID(userID string) (string, bool)
+}
+
+type Logger interface {
+	Log(message string)
+}
+```
+To make the `LogOutput` function meet this interface, we define a function type with a `Log` method on it:
+```go
+type LoggerAdapter func(message string)
+
+func (lg LoggerAdapter) Log(message string) {
+	lg(message)
+}
+```
+Now our `LoggerAdapter` and `SimpleDataStore` meet the interfaces needed by our business logic, though neither type has any idea that it does. With the dependencies defined we can implement the business logic:
+```go
+type SimpleLogic struct {
+	l  Logger
+	ds DataStore
+}
+
+func (sl SimpleLogic) SayHello(userID string) (string, error) {
+	sl.l.Log("in SayHello for " + userID)
+	name, ok := sl.ds.UserNameForID(userID)
+	if !ok {
+		return "", errors.New("unknown user")
+	}
+	return "Hello, " + name, nil
+}
+
+func (sl SimpleLogic) SayGoodbye(userID string) (string, error) {
+	sl.l.Log("in SayGoodbye for " + userID)
+	name, ok := sl.ds.UserNameForID(userID)
+	if !ok {
+		return "", errors.New("unknown user")
+	}
+	return "Goodbye, " + name, nil
+}
+```
+Notice that there is nothing in `SimpleLogic` that mentions the concrete types, so there's no dependency on them. There's no problem if we later swap in new implementations from an entirely different provider because the provider has nothing to do with out interface.
+
+We'll also want a factory function to create an instance of `SimpleLogic`, passing in interfaces and returning a struct:
+```go
+func NewSimpleLogic(l Logger, ds DataStore) SimpleLogic {
+	return SimpleLogic{
+		l:  l,
+		ds: ds,
+	}
+}
+```
+For our example we'll have a single endpoint,`/hello`, which says hello to the person whose user ID is supplied(Don't use query parameters in real applications for authentication information). Our controller needs business logic that says hello, so we define an interface for that:
+```go
+type Logic interface {
+	SayHello(userID string) (string, error)
+}
+```
+This method is available on our `SimpleLogic` struct, but once again, the concrete type is not aware of the interface. The other method on `SimpleLogic`, `SayGoodbye`, is not the interface because our controller doesn't care about it. The interface is owned by the client code, so its method set is customized to the needs of the client code:
+```go
+type Controller struct {
+	l     Logger
+	logic Logic
+}
+
+func (c Controller) SayHello(w http.ResponseWriter, r *http.Request) {
+	c.l.Log("In SayHello")
+	userID := r.URL.Query().Get("user_id")
+	message, err := c.logic.SayHello(userID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.Write([]byte(message))
+}
+```
+Let's also a factory function for the `Controller`:
+```go
+func NewController(l Logger, logic Logic) Controller {
+	return Controller{
+		l:     l,
+		logic: logic,
+	}
+}
+```
+Finally we'll wire up all of our components in `main` and start the server:
+```go
+func main() {
+	l := LoggerAdapter(LogOutput)
+	ds := NewSimpleDataStore()
+	logic := NewSimpleLogic(l, ds)
+	c := NewController(l, logic)
+	http.HandleFunc("/hello", c.SayHello)
+	http.ListenAndServe(":8080", nil)
+}
+```
+You can find the complete code for this example [here](./examples/simpleWebApp/main.go)
+
+The `main` function is the only part of the code that knows what all the concrete types actually are. If we want to swap implementations, this is the only place that we need to change. Externalizing the dependencies via dependency injection limits the changes that are needed to evolve our code and makes testing easier. We'll talk more about testing in a [later section](./15_writing_tests.md).
 
 ## Go Isn't Particularly Object-Oriented(and That's Great)
 
