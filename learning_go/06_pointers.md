@@ -295,4 +295,4 @@ If there are sudden temporary spikes in memory usage, relying on `GOGC` alone mi
 > [Solutions](./exercises/06/)
 
 ## Wrapping Up
-This section covers pointers, what they are, how to use them, and when to use them. In the [next section](./07_types_methods_and_interfaces.md) we'll cover Go's implementation of methods, interfaces, and types.
+This section covered pointers, what they are, how to use them, and when to use them. In the [next section](./07_types_methods_and_interfaces.md) we'll cover Go's implementation of methods, interfaces, and types.

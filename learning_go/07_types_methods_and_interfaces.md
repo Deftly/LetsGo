@@ -803,7 +803,11 @@ You can find the complete code for this example [here](./examples/simpleWebApp/m
 The `main` function is the only part of the code that knows what all the concrete types actually are. If we want to swap implementations, this is the only place that we need to change. Externalizing the dependencies via dependency injection limits the changes that are needed to evolve our code and makes testing easier. We'll talk more about testing in a [later section](./15_writing_tests.md).
 
 ## Go Isn't Particularly Object-Oriented(and That's Great)
+After looking at idiomatic use of types in Go we can see it's hard to categorize Go as a particular style of language. It isn't a strictly procedural language. It lacks method overriding, inheritance, and objects meaning it's not an object oriented language. Go has function types and closures, but it isn't a function language either.
+
+Go is practical, it borrows concepts from many places in order to create a language that is simple, readable, and maintainable.
 
 ## Exercises
 
 ## Wrapping Up
+This section covered types, methods, interfaces, and their best practices. The [next section](./08_generics.md) will cover generics.
