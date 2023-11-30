@@ -507,8 +507,113 @@ If you see a function that takes in an empty interface, it's likely that it is u
 These situation should be relatively rare and you should avoid using `any`. Go is designed as a strongly typed language and attempts to work around this are unidiomatic. 
 
 ## Type Assertions and Type Switches
+Go has two ways to see if a variable of an interface type has a specific concrete type or if the concrete type implements another interface. We'll start with *type assertions*.
+
+A type assertion names the concrete type that implemented the interface, or names another interface that is also implemented by the concrete type whose value is stored in the interface:
+```go
+type MyInt int
+
+func main() {
+	var i any
+	var mine MyInt = 20
+	i = mine
+	i2 := i.(MyInt)     // i2 is of type MyInt
+	fmt.Println(i2 + 1) // 21
+}
+```
+If the type assertion is wrong your code will panic like in this example:
+```go
+i2 := i.(string) // panic: interface conversion: interface {} is main.MyInt, not string
+```
+Go is very careful about concrete types. Even if two types share an underlying type, a type assertion must match the type of the value stored in the interface. The following will also panic:
+```go
+i2 := i.(int) // panic: interface conversion: interface {} is main.MyInt, not int
+```
+Crashing is not a desired behavior in most cases and we can avoid this with the comma ok idiom:
+```go
+i2, ok := i.(int) // if ok is set to false the other variable(i2) is set to its zero value
+if !ok {
+  return fmt.Errorf("unexpected type for %v", i)
+}
+fmt.Println(i2 + 1)
+```
+Even if you are absolutely certain that your type assertion is valid, use the comma ok idiom. You don't know how other people(or you in 6 months) will reuse your code. Sooner or later, your unvalidated type assertions will fail at runtime.
+
+When an interface could be one of multiple possible types, use a *type switch* instead:
+```go
+func doThings(i any) {
+	switch j := i.(type) {
+	case nil:
+		// i is nil, type of j is any
+	case int:
+		// j is of type int
+	case MyInt:
+		// j is of type MyInt
+	case io.Reader:
+		// j is of type io.Reader
+	case string:
+		// j is of type string
+	case bool, rune:
+		// i is either a bool or rune, so j is of type any
+	default:
+		// no idea what i is, so j is of type any
+	}
+}
+```
+This is similar to a normal `switch` statement but instead of specifying a boolean operation you specify a variable of an interface type and follow it with `.(type)`. Usually, you assign the variable being checked to another variable that's only valid within the `switch`.
+
+> **_NOTE:_** Since the purpose of a type `switch` is to derive a new variable from an existing one, it is idiomatic to assign the variable being switched on to a variable of the same name: `i := i.(type)`. This is one of the few places where shadowing is a good idea.
 
 ## Use Type Assertions and Type Switches Sparingly
+For the most part you should treat a parameter or return value as the type that was supplied and not what it could be. Otherwise, your function's API isn't accurately declaring what types it needs to perform its task. 
+
+That being said, there are some cases where type assertions and type switches are useful. A common use of a type assertion is to see if the concrete type behind the interface also implements another interface. This allows you to specify optional interfaces.
+
+The standard library uses this technique to allow more efficient copies when the `io.Copy` function is called:
+```go
+// copyBuffer is the actual implementation of Copy and CopyBuffer.
+// if buf is nil, one is allocated.
+func copyBuffer(dst Writer, src Reader, buf []byte) (written int64, err error) {
+    // If the reader has a WriteTo method, use it to do the copy.
+    // Avoids an allocation and a copy.
+    if wt, ok := src.(WriterTo); ok {
+        return wt.WriteTo(dst)
+    }
+    // Similarly, if the writer has a ReadFrom method, use it to do the copy.
+    if rt, ok := dst.(ReaderFrom); ok {
+        return rt.ReadFrom(src)
+    }
+    // function continues...
+}
+```
+One drawback to the optional interface technique arises when the decorator pattern is used to wrap other implementations of the same interface to layer behavior. If an optional interface is implemented by one of the wrapped implementations, you cannot detect it with a type assertion or type switch. 
+
+As an example, the standard library includes a `bufio` package that provides a buffered reader. You can buffer any other `io.Reader` implementation by passing it to the `bufio.NewReader` function and using the returned `*bufio.Reader`. If the passed-in `io.Reader` also implemented `io.ReaderFrom`, wrapping it in a buffered reader prevents the optimization we saw in the previous example.
+
+Type `switch` statements provide the ability to differentiate between multiple implementations of an interface that require different processing. This is most useful when there are only certain possible valid types that can be supplied for an interface:
+```go
+func walkTree(t *treeNode) (int, error) {
+	switch val := t.val.(type) {
+	case nil:
+		return 0, errors.New("invalid expression")
+	case number:
+		return int(val), nil
+	case operator:
+		left, err := walkTree(t.lchild)
+		if err != nil {
+			return 0, err
+		}
+		right, err := walkTree(t.rchild)
+		if err != nil {
+			return 0, err
+		}
+		return val.process(left, right), nil
+	default:
+		return 0, errors.New("unknown node type")
+	}
+}
+```
+You can see the full implementation of this example [here](./examples/operationsTree/main.go)
 
 ## Function Types Are a Bridge to Interfaces
 
