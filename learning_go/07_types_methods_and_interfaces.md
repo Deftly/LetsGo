@@ -808,6 +808,9 @@ After looking at idiomatic use of types in Go we can see it's hard to categorize
 Go is practical, it borrows concepts from many places in order to create a language that is simple, readable, and maintainable.
 
 ## Exercises
+1. You have been asked to manage a basketball league and are going to write a program to help you. Define two types. The first one, called `Team` has a field for the name of the team and a field for the player names. The second type is called `League` and has a field called `Teams` for the teams in the league and a field called `Wins` that maps a team's name to its number of wins.
+2. Add two methods to `League`. The first method is called `MatchResult`. It takes four parameters: the name of the first team, their score in the match, the name of the second team and their score in the match. This method should update the `Wins` field in `League`. The second method is called `Ranking` that returns a slice of the team names in order of wins. Build your data structures and call these methods from the `main` function using some sample data.
+3. Define an interface called `Ranker` that has a single method called `Ranking` that returns a slice of strings. Write a function called `RankPrinter` with two parameters, the first of type `Ranker` and the second of type `io.Writer`. Use the `io.WriteString` function to write the values returned by `Ranker` to the `io.Writer`, with a newline separating each result. Call this function from `main`.
 
 ## Wrapping Up
 This section covered types, methods, interfaces, and their best practices. The [next section](./08_generics.md) will cover generics.
