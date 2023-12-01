@@ -812,5 +812,7 @@ Go is practical, it borrows concepts from many places in order to create a langu
 2. Add two methods to `League`. The first method is called `MatchResult`. It takes four parameters: the name of the first team, their score in the match, the name of the second team and their score in the match. This method should update the `Wins` field in `League`. The second method is called `Ranking` that returns a slice of the team names in order of wins. Build your data structures and call these methods from the `main` function using some sample data.
 3. Define an interface called `Ranker` that has a single method called `Ranking` that returns a slice of strings. Write a function called `RankPrinter` with two parameters, the first of type `Ranker` and the second of type `io.Writer`. Use the `io.WriteString` function to write the values returned by `Ranker` to the `io.Writer`, with a newline separating each result. Call this function from `main`.
 
+> [Solutions](./exercises/07/)
+
 ## Wrapping Up
 This section covered types, methods, interfaces, and their best practices. The [next section](./08_generics.md) will cover generics.

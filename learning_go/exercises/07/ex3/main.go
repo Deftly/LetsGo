@@ -86,5 +86,7 @@ func main() {
 	l.MatchResult("Canada", 100, "Germany", 110)
 	l.MatchResult("USA", 65, "Germany", 70)
 	l.MatchResult("Canada", 95, "Serbia", 80)
+	l.MatchResult("Germany", 100, "USA", 98)
+	l.MatchResult("Serbia", 70, "Canada", 68)
 	RankPrinter(l, os.Stdout)
 }
