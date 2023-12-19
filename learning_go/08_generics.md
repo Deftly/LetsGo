@@ -110,7 +110,47 @@ func (s *Stack[T]) Pop() (T, bool) {
 	return top, true
 }
 ```
+The type parameter information(`[T any]`)is placed within brackets and has two parts. The first is the parameter name, it is customary to use capital letters for them. The second part is the *type constraint*, which uses a Go interface to specify which types are valid. If any type is usable, this is specified using the universe block identifier `any`. In the stack declaration we declare `vals` to be of the type `[]T`.
 
+Looking at the method declarations, we refer to the type in the receiver section with `Stack[T]`.
+
+Handling zero values is a little different with generics. In `Pop`, we can't just return `nil` because that's not a valid value for a value type like `int`. The easiest way to get a zero value for a generic is to declare a variable with `var` and return it since `var` always initializes its variable to the zero value if no value is assigned.
+
+Using a generic type is similar to a non-generic one:
+```go
+func main() {
+	var intStack Stack[int]
+	intStack.Push(10)
+	intStack.Push(20)
+	intStack.Push(30)
+	v, ok := intStack.Pop()
+	fmt.Println(v, ok)
+}
+```
+The only difference is that when we declare our variable, we include the type that we want to use with our stack. If you try to push a string onto this stack, the compiler will catch it and produce a compiler error:
+```shell
+cannot use "nope" (untyped string constant) as int value in argument to intStack.Push
+```
+You can view the full implementation of this stack [here](./examples/stack/main.go)
+
+Let's add another method to the stack to tell us if the stack contains a value:
+```go
+func (s Stack[T]) Contains(val T) bool {
+	for _, v := range s.vals {
+		if v == val { // invalid operation: v == val (type parameter T is not comparable with ==)
+			return true
+		}
+	}
+	return false
+}
+```
+This doesn't work because `any`, just like the `interface{}` doesn't say anything. You can only store and retrieve values of `any` type. To use `==`, you need a different type, and since nearly all Go types can be compared with `==` and `!=`, a built-in interface called `comparable` is defined in the universe block.
+```go
+type Stack[T comparable] struct {
+  vals []T
+}
+```
+Now our `Contains` method works as expected.
 
 ## Generic Functions Abstract Algorithms
 
