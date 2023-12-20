@@ -209,8 +209,35 @@ func main() {
 The complete example code can be found [here](./examples/mapFilterReduce/main.go)
 
 ## Generics and Interfaces
+Any interface can be used as a type constraint, not just `any` and `comparable`. In this example, our struct can hold any two values of the same type as long as they implement `fmt.Stringer` and this is enforced at compile time:
+```go
+type Pair[T fmt.Stringer] struct {
+  Val1 T
+  Val2 T
+}
+```
+We can also create interfaces that have type parameters:
+```go
+type Differ[T any] interface {
+  fmt.Stringer
+  Diff(T) float64
+}
+```
+We can use these two types to create a comparison function. This function takes in two `Pair` instances that have fields of type `Differ`, and returns the `Pair` with the closer values:
+```go
+func FindCloser[T Differ[T]](pair1, pair2 Pair[T]) Pair[T] {
+  d1 := pair1.Val1.Diff(pair1.Val2)
+  d2 := pair2.Val1.Diff(pair2.Val2)
+  if d1 < d2 {
+    return pair1
+  }
+  return pair2
+}
+```
+The full example with types that meet the `Differ` interface can be found [here](./examples/genericInterface/main.go)
 
 ## Use Type Terms to Specify Operators
+
 
 ## Type Inference and Generics
 
