@@ -4,9 +4,9 @@
 
 ## [Variables](./Variables/main.go)
 
-## [Constants]()
+## [Constants](./Constants/main.go)
 
-## [For]()
+## [For](./For/main.go)
 
 ## [If/Else]()
 
