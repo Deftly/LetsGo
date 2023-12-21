@@ -1,16 +1,16 @@
 # Go by Example
 
-## [Values](./Values/main.go)
+## [Values](./Values/values.go)
 
-## [Variables](./Variables/main.go)
+## [Variables](./Variables/variables.go)
 
-## [Constants](./Constants/main.go)
+## [Constants](./Constants/constant.go)
 
-## [For](./For/main.go)
+## [For](./For/for.go)
 
-## [If/Else](./IfElse/main.go)
+## [If/Else](./IfElse/if-else.go)
 
-## [Switch](./Switch/main.go)
+## [Switch](./Switch/switch.go)
 
 ## [Arrays]()
 
