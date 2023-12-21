@@ -12,7 +12,7 @@
 
 ## [Switch](./Switch/switch.go)
 
-## [Arrays]()
+## [Arrays](./Arrays/arrays.go)
 
 ## [Slices]()
 
