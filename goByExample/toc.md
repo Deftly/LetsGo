@@ -10,7 +10,7 @@
 
 ## [If/Else](./IfElse/main.go)
 
-## [Switch]()
+## [Switch](./Switch/main.go)
 
 ## [Arrays]()
 
